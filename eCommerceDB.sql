@@ -56,10 +56,10 @@ create table if not exists Orders (
 	ord_amount int not null, 
 	ord_date date, 
 	cus_id int not null, 
-	pro_id int not null, 
+	prod_id int not null, 
 	primary key(ord_id),
 	foreign key(cus_id) references customer(cus_id),
-	foreign key(pro_id) references product(pro_id)
+	foreign key(prod_id) references product_details(prod_id)
 );
 	
 /*create table rating */
@@ -135,10 +135,11 @@ select count(c.cus_name), c.cus_gender, o.ord_amount
 /*Q4 Display all the orders along with the product name ordered by a customer having 
 Customer_Id=2. */
 select o.*,p.pro_name, p.pro_desc
-  from customer c, orders o, product p
+  from customer c, orders o, product p, product_details pd
  where c.cus_id = o.cus_id
-   and o.pro_id = p.pro_id
-   and c.cus_id = 2 ;
+   and o.prod_id = pd.prod_id
+   and pd.pro_id = p.pro_id
+   and c.cus_id = 2;
 
 /* Q5 Display the Supplier details who can supply more than one product. */
 select s.supp_name,s.supp_phone,count(pd.pro_id) 'No Of Products'
@@ -149,17 +150,19 @@ select s.supp_name,s.supp_phone,count(pd.pro_id) 'No Of Products'
  
 /* Q6) Find the category of the product whose order amount is minimum.*/
 select c.cat_name, p.pro_name, o.ord_amount
-  from product p, category c, orders o
+  from product p, product_details pd, category c, orders o
    where 1=1
+     and p.pro_id = pd.pro_id
      and p.cat_id = c.cat_id
-     and p.pro_id =  o.pro_id
+     and pd.prod_id =  o.prod_id
      and o.ord_amount = ( select min(od.ord_amount) from orders od );
 
 /* Q7 Display the Id and Name of the Product ordered after “2021-10-05”.*/
 select p.pro_id, p.pro_name, o.ord_date
-  from product p, orders o
+  from product p, product_details pd, orders o
    where 1=1
-     and p.pro_id =  o.pro_id
+     and p.pro_id = pd.pro_id
+     and pd.prod_id =  o.prod_id
      and o.ord_date > '2021-10-05';
 
 /* Q8 Display customer name and gender whose names start or end with character 'A'.*/
@@ -170,7 +173,7 @@ select cus_name, cus_gender
 /* Q9 Create a stored procedure to display the Rating for a Supplier if any along with the 
 	Verdict on that rating if any like if rating >4 then “Genuine Supplier” if rating >2 “Average 
 	Supplier” else “Supplier should not be considered”*/
-delimiter &&
+delimiter //
 CREATE PROCEDURE ratingVerdict()
 	BEGIN
 		select r.rat_ratstars, s.supp_name, 
@@ -180,7 +183,7 @@ CREATE PROCEDURE ratingVerdict()
 			end as verdict
           from rating r, supplier s  
 		 where r.supp_id = s.supp_id;
-	END && ;
+	END // ;
 delimiter ;
 
 -- Call the stored procedure
